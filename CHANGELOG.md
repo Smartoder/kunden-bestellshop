@@ -34,8 +34,22 @@ Der Betreiber hat es auf dem Bon bestätigt: *„bon und strasse kommt alles sau
 
 | Datei | Änderung |
 |---|---|
-| `references/winorder-kasse.md` | **Zahlungsarten auslesen statt raten** (neuer Abschnitt mit Beispiel-Tabelle und der Falle `Bar` → `Barzahlung`). **Nach jeder Format-Änderung den Prozess neu starten** (inkl. Wächter-Prüfung). Encoding-Abschnitt um die Bestelldaten-Falle erweitert. Diagnose-Checkliste von 7 auf 11 Punkte (Prozessstand, Umlaute, Zahlungsmittel, Hausnummer). |
+| `references/winorder-kasse.md` | **Zahlungsarten auslesen statt raten** (neuer Abschnitt mit Beispiel-Tabelle und der Falle `Bar` → `Barzahlung`). **Nach jeder Format-Änderung den Prozess neu starten** (inkl. Wächter-Prüfung und **Einzelinstanz-Riegel für den Wächter**). Encoding-Abschnitt um die Bestelldaten-Falle erweitert. Diagnose-Checkliste von 7 auf 11 Punkte (Prozessstand, Umlaute, Zahlungsmittel, Hausnummer). |
 | `references/regeln-und-fallen.md` | **Falle 8 erweitert** (zweite Hälfte der UTF-8-Falle: die Bestelldaten, mit Byte-Tabelle und Prüfbefehl). **Neu Falle 12a** (Wert im Code, aber die Kasse kennt ihn nicht). **Neu Falle 12b** (Code geändert, laufender Prozess hat ihn nie geladen — inkl. Wächter). |
+
+### Nachtrag — der Wächter brauchte selbst einen Riegel
+
+Beim Aufräumen zeigte sich ein Folgefehler: der **Wächter** (Aufpasser) hatte
+**keinen** Einzelinstanz-Riegel, nur der Abhol-Prozess. Zwei Wächter starteten den
+Prozess deshalb gegenseitig alle ~15 Sekunden neu — der Kassen-Anschluss **flackerte**.
+
+- Ein Mutex (`…BridgeWatcher`) beendet den zweiten Wächter sofort
+- **Ein einzelner Autostart-Eintrag ist kein Nachweis:** der Run-Eintrag war
+  vorhanden, wurde aber nicht ausgeführt. Ergänzt um eine **Verknüpfung im
+  Startordner** — erst der Riegel macht zwei Autostart-Wege gefahrlos
+
+> **Merksatz:** Wer zwei Autostart-Wege anlegt, muss vorher den doppelten Start
+> verhindern. Sonst bekämpfen sich die Instanzen.
 
 **Für jeden Agenten:** Bei einem Bon-Fehler **zuerst die Bytes der eigenen Datei
 prüfen** (`C3 83 C2 xx` = doppelt kodiert), **nicht** die Kasse verdächtigen. Und:

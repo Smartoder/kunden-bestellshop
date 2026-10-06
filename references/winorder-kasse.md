@@ -244,6 +244,19 @@ Bon zeigte weiterhin das falsche Zahlungsmittel, obwohl der Code längst korrekt
 - [ ] Prüfen, dass der **Wächter** läuft und den Prozess wirklich neu startet. Läuft
       er nicht, bleibt der Kassen-Anschluss nach einem Absturz **stumm** liegen —
       ohne Fehlermeldung, ohne Bon
+- [ ] **Der Wächter braucht einen eigenen Einzelinstanz-Riegel.** Hat er keinen,
+      erzeugt jeder weitere Autostart einen zweiten Wächter: beide starten Prozesse
+      und schreiben in dieselbe Logdatei → der Anschluss **flackert**.
+      Real passiert (06.10.2026): zwei Wächter starteten den Abhol-Prozess alle
+      ~15 Sekunden neu, bis ein Mutex (`…BridgeWatcher`) das beendete
+- [ ] **Zwei Autostart-Wege sind erst mit dem Riegel sicher:** Eintrag in
+      `…\CurrentVersion\Run` **und** Verknüpfung im Startordner. Ohne Riegel
+      bekämpfen sie sich
+
+> ⚠️ **Ein einzelner Autostart-Eintrag ist kein Nachweis.** Am 06.10.2026 war der
+> Run-Eintrag vorhanden, wurde aber nicht ausgeführt — der Prozess hing stattdessen
+> an einer Editor-Sitzung. Deshalb zusätzlich eine Verknüpfung im Startordner
+> anlegen. Beides zusammen ist gefahrlos — **sobald der Riegel existiert**.
 
 > ⚠️ **Konfigurationsdateien der Kasse nie mit falschem Encoding** lesen/schreiben
 > (oft ISO-8859-1). Und: die Kasse liest beim **Start**, schreibt beim **Beenden** —
