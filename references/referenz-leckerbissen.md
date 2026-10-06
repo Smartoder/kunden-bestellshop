@@ -52,6 +52,24 @@ Alle Zeilen wurden am **03.10.2026** von einem Entwicklungsrechner aus **ausgef�
 > Die zwei 401er sind **kein** Fehler — sie sind der Beweis, dass Export und Diagnose
 > geschützt sind. Ein Aufruf **ohne** Key, der **200** liefert, wäre der Fehler.
 
+### Nachtrag 06.10.2026 — Aktion „Lieferung gratis"
+
+Das Muster bekam eine **zeitlich begrenzte Aktion**: Liefergebühr **1,99 € → 0,00 €**
+(Werbung, damit Testkunden bestellen). Auf der Live-Seite geprüft:
+
+| Baustein | Befehl / Stelle | Ergebnis |
+|---|---|---|
+| Speisekarte | `GET /api/menu` | **200**, **51 Artikel** |
+| Stammdaten | `GET /api/store` | **200**, genau 5 Felder |
+| Aktionshinweis | Setup-Dialog | `Aktion: Lieferung gratis (statt 1,99 €)` |
+| Warenkorb | Zusammenfassung | `Liefergebühr (Tarmstedt) 1,99 € 0,00 €` |
+
+**Wie es gebaut ist** (Vorbild für Kunden mit Aktion): die reguläre Gebühr bleibt
+**Streichpreis**, eine **einzige** Funktion im Lieferzonen-Modul liefert den
+tatsächlichen Betrag (`DELIVERY_FEE_FREE` + `currentDeliveryFee(zone)`). Der
+Mindestbestellwert bleibt bestehen. Details + die Falle der mehrfach abgeleiteten
+Gebühr: `references/entbranden.md` §4a und `references/regeln-und-fallen.md`, Falle 15.
+
 ---
 
 ## 3. Der Funktionsumfang, den ein neuer Kunde **1:1** bekommt
@@ -109,6 +127,8 @@ Das ist der „gleiche Aufbau". Ein Fork startet mit **genau dieser Oberfläche*
 
 - Menü aus der Datenbank, **Preise serverseitig neu gerechnet** (nie aus dem Browser)
 - Lieferzonen als **Allow-List** (PLZ, Mindestbestellwert, Gebühr), Fehlertext im Modul
+- **Aktion/Rabatt** (z. B. „Lieferung gratis"): reguläre Gebühr als Streichpreis, eine
+  Schaltstelle rechnet den tatsächlichen Betrag (siehe Nachtrag in Abschnitt 2)
 - Öffnungszeiten + **Wunschzeit** aus Freitext (15-Min-Raster, Vorlauf)
 - Warenkorb mit Kundendaten, Liefer- oder Abholmodus
 - Stripe **Redirect-Checkout** (`mode: payment`), `metadata` = `order_id` + `order_type`

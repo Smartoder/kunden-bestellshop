@@ -9,6 +9,41 @@ ergänzen und mit `git push` veröffentlichen (siehe `README.md` → „Aktualis
 
 ---
 
+## 2026-10-06 — Bon-Fehler behoben und am Bon bewiesen (Umlaute, Adresse, Zahlungsart)
+
+**Anlass:** Drei Fehler auf einem echten Bon (Bestellung #43): Umlaute verstümmelt
+(`BÃ¶lstedter StraÃŸe`), Hausnummer fehlte im Bon-Feld, und „Online bezahlt" stand auf
+dem Bon, obwohl der Kunde **bar** gewählt hatte. Der Betreiber hat die drei Punkte auf
+dem Papier markiert.
+
+**Wichtigste Erkenntnis: die Kasse war nicht die Ursache.** Die Kassen-DB und der
+Export lieferten sauberes UTF-8 (`C3 B6`); unsere Bon-Datei hatte doppelt kodierte
+Bytes (`C3 83 C2 B6`). Die Kasse schreibt in ihren **eigenen** Ausgabedateien
+korrektes UTF-8 (`C3 BC` in `Servicegebühr`). Der Fehler entstand **beim Lesen**.
+
+| Fehler | Ursache | Behoben in |
+|---|---|---|
+| Umlaute doppelt kodiert | `Invoke-RestMethod` dekodiert unter PowerShell 5.1 mit dem System-ANSI-Zeichensatz, wenn der Server keinen `charset` mitschickt | `WebRequest` + `Encoding::UTF8` |
+| Hausnummer fehlte (`Straße.1a`) | **Punkt** vor der Nr. galt nicht als Trenner — nicht der Umlaut | Zerlegung akzeptiert Punkt, Bindestrich, Slash, Bereiche (`11-13`) |
+| Falsches Zahlungsmittel | `Bar` / `Kartenzahlung` sind **keine** Stammdatenwerte dieser Kasse | echte Werte: `Barzahlung` / `EC-Karte` |
+| Bon zeigte trotz Fix das Alte | der laufende Prozess hatte den Skriptstand von **zwei Wochen** vorher | Neustart + Startzeit prüfen |
+
+**Nachweis:** Rechnung **#6636** — `<PaymentType>Barzahlung</PaymentType>`,
+`Street=Bölstedter Straße` (HEX `C3 B6`), `HouseNo=1a`, 0 doppelt kodierte Stellen.
+Der Betreiber hat es auf dem Bon bestätigt: *„bon und strasse kommt alles sauber"*.
+
+| Datei | Änderung |
+|---|---|
+| `references/winorder-kasse.md` | **Zahlungsarten auslesen statt raten** (neuer Abschnitt mit Beispiel-Tabelle und der Falle `Bar` → `Barzahlung`). **Nach jeder Format-Änderung den Prozess neu starten** (inkl. Wächter-Prüfung). Encoding-Abschnitt um die Bestelldaten-Falle erweitert. Diagnose-Checkliste von 7 auf 11 Punkte (Prozessstand, Umlaute, Zahlungsmittel, Hausnummer). |
+| `references/regeln-und-fallen.md` | **Falle 8 erweitert** (zweite Hälfte der UTF-8-Falle: die Bestelldaten, mit Byte-Tabelle und Prüfbefehl). **Neu Falle 12a** (Wert im Code, aber die Kasse kennt ihn nicht). **Neu Falle 12b** (Code geändert, laufender Prozess hat ihn nie geladen — inkl. Wächter). |
+
+**Für jeden Agenten:** Bei einem Bon-Fehler **zuerst die Bytes der eigenen Datei
+prüfen** (`C3 83 C2 xx` = doppelt kodiert), **nicht** die Kasse verdächtigen. Und:
+ein Fix am Formatter wirkt **erst nach einem Neustart** des Abhol-Prozesses — sonst
+läuft die alte Logik weiter und der Bon bleibt falsch, obwohl der Code stimmt.
+
+---
+
 ## 2026-10-05 — Git-Autor-Regel präzisiert (Deploy-Blockade `COMMIT_AUTHOR_REQUIRED`)
 
 **Anlass:** Ein Produktions-Deploy des Musters blieb `BLOCKED` — **ohne Build (0 ms)**.

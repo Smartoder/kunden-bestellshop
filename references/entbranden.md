@@ -71,6 +71,23 @@ gehören dokumentiert (Quelle + Lizenz).
       Quelle. Nach der Änderung einen Checkout mit Grenzfall (unter Mindestwert)
       testen.
 
+### 4a. Aktion / Rabatt (z. B. „Lieferung gratis")
+
+Soll der Kunde zeitweise die Liefergebühr erlassen (Werbung, Testkunden, Neustart),
+**nicht** die Zone verstellen: die reguläre Gebühr bleibt als **Streichpreis** stehen,
+und eine **eine** Schaltstelle im Lieferzonen-Modul berechnet den tatsächlichen Betrag
+(Vorlage: `DELIVERY_FEE_FREE` + `currentDeliveryFee(zone)`). Die Anzeige zeigt
+`1,99 €` durchgestrichen → `0,00 €` + „Aktion: Lieferung gratis".
+
+- [ ] Reguläre Gebühr **erhalten** (nur die Berechnung auf 0 schalten) — so ist die
+      Aktion in einem Schritt wieder aus
+- [ ] **Freie Lieferung ≠ kein Mindestbestellwert.** Der Mindestwert bleibt bestehen;
+      die Aktion senkt nur den Lieferbetrag
+- [ ] **Jede** Ableitung prüfen — die Gebühr ist **nicht** zentral, sie wird an
+      mehreren Stellen aus den Zonen gezogen (Website-Kopfzeile, Setup-Dialog,
+      Warenkorb, `/api/checkout`, **Admin-Bestellaufnahme**, Mail/Bon). Eine
+      vergessene Stelle rechnet weiter den vollen Betrag — siehe Falle 15.
+
 ---
 
 ## 5. Öffnungszeiten und Wunschzeit

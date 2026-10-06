@@ -56,9 +56,28 @@ einen Kommentar daraus — **keine Umsätze, doppelte Stämme.**
 - [ ] Artikel-Nummern (schlagen den Namen) mitführen, falls vorhanden
 - [ ] Log auf `FEHLT`-Einträge prüfen **nach jeder** Bestellung
 
-> ⚠️ **UTF-8-Encoding.** Die JSON-Map **explizit als UTF-8** lesen. Wird sie als ANSI
-> gelesen, wird aus „ö" ein „Ã¶" und **kein** Schlüssel mit Umlaut passt mehr.
-> Die Kasse hat dann „Pizzabrötchen" nie gefunden.
+> ⚠️ **UTF-8-Encoding — zwei Stellen, beide schon einmal schiefgegangen.**
+> Die JSON-Map **explizit als UTF-8** lesen. Wird sie als ANSI gelesen, wird aus
+> „ö" ein „Ã¶" und **kein** Schlüssel mit Umlaut passt mehr. Die Kasse hat dann
+> „Pizzabrötchen" nie gefunden.
+>
+> **Und die Bestelldaten selbst:** Wer die Bestellungen per `Invoke-RestMethod`
+> abholt, bekommt **doppelt kodierte Umlaute** auf den Bon (`BÃ¶lstedter`), weil
+> PowerShell 5.1 die Antwort mit dem System-ANSI-Zeichensatz dekodiert, obwohl der
+> Server UTF-8 sendet und keinen `charset`-Parameter mitschickt. Richtig ist:
+>
+> ```powershell
+> $res  = Invoke-WebRequest -Uri $uri -Headers $Auth -UseBasicParsing
+> $json = [System.Text.Encoding]::UTF8.GetString($res.RawContentStream.ToArray())
+> return ($json | ConvertFrom-Json)
+> ```
+>
+> Die Kassen-Software war **nicht** die Ursache: sie schreibt in ihren eigenen
+> Ausgabedateien korrektes UTF-8. Der Fehler entsteht **beim Lesen**.
+> Nachweis: `C3 B6` (sauber) gegen `C3 83 C2 B6` (doppelt kodiert).
+> Die Spec verlangt die richtige Kodierung ausdrücklich: *„Beachten Sie die richtige
+> Kodierung vor allem von Sonderzeichen. Zur Fehlersuche können Sie die Datei mit dem
+> Internet-Explorer öffnen. Hier muss sie richtig angezeigt werden."*
 
 ---
 
@@ -178,6 +197,54 @@ bewusst und mit Einverständnis.
       „Online bezahlt") muss in der Kasse unter Stammdaten/Zahlungsarten existieren,
       sonst ordnet die Kasse die Zahlung nicht zu.
 
+### Die Zahlungsarten der Kasse **auslesen**, nicht raten
+
+Der `PaymentType` muss **wörtlich** einem Stammdaten-Wert entsprechen. In einer
+Kasse ohne den passenden Eintrag erscheint die Bestellung mit **gelbem Warnzeichen**
+und muss von Hand zugeordnet werden.
+
+**Rate nicht, welche Zahlungsarten es gibt** — lies sie in der Kasse nach
+(`Stammdaten → Zahlungsarten`) oder suche sie in der Kassen-Datenbank. Eine
+Firebird-Kasse lässt sich dafür im laufenden Betrieb nicht direkt kopieren
+(Datei-Sperre). Zwei Wege: eine **Sicherung** (`*.wob` entpacken) verwenden, oder
+die Datei mit `FileShare.ReadWrite` in eine Kopie lesen.
+
+**Beispiel Leckerbissen** (ausgelesen 06.10.2026 — so sieht ein typisches Ergebnis aus):
+
+| `orders.zahlungsart` | `PaymentType` | Weg |
+|---|---|---|
+| `online` (oder NULL/Altbestand) | `Online bezahlt` | Online-Zahlung |
+| `bar` | `Barzahlung` | Übergabe (Fahrer / Theke) |
+| `karte_vor_ort` | `EC-Karte` | Theke (nur Abholung) |
+
+> 🔴 **`Bar` und `Kartenzahlung` gab es in dieser Kasse NICHT** — genau diese zwei
+> Texte standen aber im Code. Der Bon hätte ein unbekanntes Zahlungsmittel gezeigt.
+>
+> ⚠️ **Häufige Falle:** Der Text `Bar` ist naheliegend, heißt in der Kasse aber
+> `Barzahlung`. Ebenso gibt es kein `Kartenzahlung`, sondern `EC-Karte`,
+> `Kreditkarte` und anbietergebundene Varianten wie `Sumup Kartenzahlung`.
+> **Immer nachsehen.** Der PHP-Referenzserver der Kassen-Software verwendet
+> `'Barzahlung'`.
+>
+> **Schreibweise exakt übernehmen** — inklusive Bindestrich (`EC-Karte`) und
+> Groß-/Kleinschreibung.
+
+### 🔁 Nach jeder Format-Änderung: den Abhol-Prozess **neu starten**
+
+Ein dauerhaft laufender Abhol-Prozess (Bridge/Dienst) liest sein Skript **beim
+Start**. Änderungen am Formatter wirken **erst nach einem Neustart**.
+
+**Real passiert (06.10.2026):** Der Fix für die Zahlungsart lag seit dem Vortag im
+Repo, der laufende Prozess hatte aber noch den Stand von **zwei Wochen** vorher — der
+Bon zeigte weiterhin das falsche Zahlungsmittel, obwohl der Code längst korrekt war.
+
+- [ ] Nach jeder Änderung an Format/Vorlage den Prozess **neu starten**
+- [ ] **Startzeit** des neuen Prozesses prüfen (`CreationDate`) — nicht nur, dass
+      überhaupt einer läuft
+- [ ] Prüfen, dass der **Wächter** läuft und den Prozess wirklich neu startet. Läuft
+      er nicht, bleibt der Kassen-Anschluss nach einem Absturz **stumm** liegen —
+      ohne Fehlermeldung, ohne Bon
+
 > ⚠️ **Konfigurationsdateien der Kasse nie mit falschem Encoding** lesen/schreiben
 > (oft ISO-8859-1). Und: die Kasse liest beim **Start**, schreibt beim **Beenden** —
 > Änderungen bei laufender Kasse werden überschrieben.
@@ -205,12 +272,22 @@ Der **häufigste** Fall zuerst prüfen:
 
 1. **Testmodus?** Ist die Bestellung als Test markiert, wird sie **absichtlich**
    zurückgehalten. Erst das prüfen, dann alles andere.
-2. **Status `offen`?** (bezahlt) — nicht `ausstehend`.
-3. **Hotfolder:** liegt die Datei in `Incoming` oder schon in `Processed`?
-4. **Kassen-Log** auf den Shopnamen prüfen.
-5. **Fehlerdatei** der Kasse.
-6. **Druckauftrag** in der Warteschlange.
-7. **Artikelmap:** `FEHLT` im Bridge-Log?
+2. **Läuft der Abhol-Prozess noch — und mit dem *aktuellen* Skriptstand?** Er liest
+   sein Skript beim Start. Nach einer Format-Änderung muss er neu gestartet worden
+   sein (Startzeit prüfen). Läuft der Wächter nicht, kommt nach einem Absturz
+   stillschweigend nichts mehr an — ohne Fehlermeldung.
+3. **Status `offen`?** (bezahlt) — nicht `ausstehend`.
+4. **Hotfolder:** liegt die Datei in `Incoming` oder schon in `Processed`?
+5. **Kassen-Log** auf den Shopnamen prüfen.
+6. **Fehlerdatei** der Kasse.
+7. **Druckauftrag** in der Warteschlange.
+8. **Artikelmap:** `FEHLT` im Bridge-Log?
+9. **Umlaute verstümmelt** (`BÃ¶lstedter`)? Dann liest der Prozess den Export mit
+   `Invoke-RestMethod` (ANSI) statt explizit als UTF-8.
+10. **Zahlungsmittel falsch oder leer?** Der `PaymentType` muss **wörtlich** einer
+    Zahlungsart in den Stammdaten entsprechen — die Werte dort nachsehen, nicht raten.
+11. **Hausnummer fehlt im Bon-Feld?** Prüfen, ob die Adresszerlegung das Trennzeichen
+    des Gastes kennt (Punkt, Bindestrich, Slash — nicht nur Leerzeichen).
 
 ```powershell
 Get-ChildItem "<WINORDER-BASIS>\EShop\Incoming"

@@ -88,6 +88,75 @@ Umlaut passte. Die Kasse fand „Pizzabrötchen" nie, der Bon blieb falsch.
 **Regel:** UTF-8 **explizit** lesen. Kassen-Konfigdateien oft ISO-8859-1 — ebenfalls
 explizit.
 
+**Am 06.10.2026 die zweite Hälfte derselben Falle erwischt — diesmal bei den
+Bestelldaten.** Auf dem Bon stand `BÃ¶lstedter StraÃŸe`. Ursache war **nicht** die
+Datenbank und **nicht** die Kasse:
+
+| Stelle | Bytes für „ö" | Bewertung |
+|---|---|---|
+| Datenbank / Export roh | `C3 B6` | **korrektes** UTF-8 |
+| Unsere Bon-Datei | `C3 83 C2 B6` | **doppelt kodiert** |
+| Ausgabedatei der Kasse selbst | `C3 BC` | die Kasse schreibt **korrekt** |
+
+**Grund:** `Invoke-RestMethod` dekodiert unter **PowerShell 5.1** mit dem
+System-ANSI-Zeichensatz, wenn der Server **keinen** `charset`-Parameter mitschickt.
+Umlaute werden doppelt kodiert.
+
+```powershell
+# FALSCH - zerstört die Umlaute:
+return Invoke-RestMethod -Uri $uri -Headers $Auth -TimeoutSec 30
+
+# RICHTIG - Bytes holen, ausdruecklich UTF-8:
+$res  = Invoke-WebRequest -Uri $uri -Headers $Auth -TimeoutSec 30 -UseBasicParsing
+$json = [System.Text.Encoding]::UTF8.GetString($res.RawContentStream.ToArray())
+```
+
+**Prüfbefehl** (muss `0` liefern):
+
+```powershell
+$b=[IO.File]::ReadAllBytes($bon); $n=0
+for($i=0;$i -lt $b.Length-2;$i++){
+  if($b[$i] -eq 0xC3 -and $b[$i+1] -eq 0x83 -and $b[$i+2] -eq 0xC2){$n++}
+}
+$n
+```
+
+> ⚠️ **Wer die Spezifikation gegen sich selbst prüft, findet den Fehler schneller:**
+> Die Kassen-Spec verlangt ausdrücklich korrektes UTF-8 für Sonderzeichen. Wenn die
+> **eigene** Datei die Bytes nicht sauber enthält, liegt es an der eigenen Verarbeitung
+> — nicht an der Kasse.
+
+### Falle 12a — Der Wert steht im Code, aber die Kasse kennt ihn nicht
+
+Ein Zahlungsart-Text wurde im Code frei gewählt (`Bar`, `Kartenzahlung`). Die Kasse hat
+diese Einträge **nicht** — bei ihr heißen sie `Barzahlung` und `EC-Karte`. Die
+Bestellung erscheint dann mit **gelbem Warnzeichen** und muss von Hand zugeordnet
+werden.
+
+**Regel:** Solche Texte **aus der Kasse auslesen**, nicht erfinden. Und die
+**Schreibweise exakt** übernehmen (Bindestrich `EC-Karte`, Groß-/Kleinschreibung).
+Der `PaymentType` ist laut Spec kein freier Text: *„Der Text muss mit einem Wert der
+Stammdaten / Zahlungsarten übereinstimmen."* Weitere Falle: `Bar` ist naheliegend,
+heißt aber `Barzahlung`.
+
+### Falle 12b — Code geändert, aber der laufende Prozess hat ihn nie geladen
+
+Ein dauerhaft laufender Abhol-Prozess liest sein Skript **beim Start**. Ein Fix am
+Formatter wirkt **erst nach einem Neustart**.
+
+**Am 06.10.2026 belegt:** Der Zahlungsart-Fix lag seit dem **Vortag** im Repo, der
+laufende Prozess hatte aber den Stand von **zwei Wochen** vorher — der Bon zeigte
+weiterhin das falsche Zahlungsmittel, obwohl der Code längst korrekt war.
+
+**Regel:** Nach jeder Format-/Vorlagen-Änderung den Prozess **neu starten** und die
+**Startzeit** des neuen Prozesses prüfen (`CreationDate`) — nicht nur, dass überhaupt
+einer läuft.
+
+**Dazu gehört der Wächter:** Läuft der Aufpasser-Prozess nicht, wird die Bridge nach
+einem Absturz **nicht** neu gestartet. Der Kassen-Anschluss bleibt dann **stumm**
+liegen — ohne Fehlermeldung, ohne Bon. Also prüfen, ob **beide** Prozesse laufen
+(Wächter **und** Abhol-Prozess), nicht nur einer.
+
 ### Falle 9 — Falscher Hotfolder
 
 Der Ordner hatte eine **Versionsnummer** im Pfad. Ein „richtig aussehender" Pfad ohne
@@ -170,6 +239,24 @@ einsatzbereit — obwohl ihre Namen verfügbar aussahen:
 MCP fehlt oder streikt, **ersatzweise** per HTTP, SSH oder Dashboard prüfen. Ein
 Werkzeug zu besitzen heißt nicht, es nutzen zu können. Die beobachteten Grenzen stehen
 in `references/referenz-leckerbissen.md`, Abschnitt 8.
+
+### Falle 15 — Dieselbe Zahl an mehreren Stellen hartcodiert
+
+Am **06.10.2026** sollte die Vorlage für eine Aktion **„Lieferung gratis"** bekommen
+(Liefergebühr statt 1,99 € → 0,00 €). Die Liefergebühr stand aber **nicht nur** im
+Lieferzonen-Modul: die **Admin-Bestellaufnahme** hatte `2,00 €` **hartcodiert** und
+wich damit schon vorher ab (1,99 € vs. 2,00 €). Der Rabatt hätte dort **nicht** gewirkt.
+
+**Regel:** Ein Wert steht **einmal** (Regel 8). Vor jeder Preis-/Gebühren-Änderung
+**alle** Ableitungen suchen, nicht nur die „offizielle" Quelle:
+
+```powershell
+rg -i "liefergeb|deliveryFee|1[.,]99|2[.,]99" --glob "!node_modules" --glob "!.next"
+```
+
+Beim Rabatt zusätzlich prüfen, dass **Streichen** (Anzeige) und **Berechnen** (Checkout,
+Stripe, Mail, Bon) getrennt sind: `deliveryFee` bleibt der reguläre Wert, eine Funktion
+liefert den tatsächlichen. Sonst zeigt die Website 0 € und Stripe bucht 1,99 €.
 
 ### Falle 14 — Vom veralteten Arbeitsstand geklont
 

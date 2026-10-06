@@ -223,6 +223,7 @@ Ohne diese sechs Angaben ist jede Struktur geraten. Volle Liste:
 1. **Marke** — Name, Logo-Datei, Primärfarbe(n), Slogan, Sprache
 2. **Stammdaten** — Adresse, Telefon, E-Mail, Öffnungszeiten, Zubereitungszeit
 3. **Liefergebiet** — PLZ-Liste, Mindestbestellwert, Liefergebühr je Zone
+   (und ob es eine **Aktion/Rabatt** geben soll, z. B. „Lieferung gratis")
 4. **Domain** — welche Domain, wer besitzt sie, DNS-Zugang
 5. **Kasse** — welches System, wie heißt der Artikelstamm, wie kommen Bestellungen an
 6. **Zahlung** — eigenes Konto oder geteiltes? Test- oder Live-Start?
@@ -241,7 +242,7 @@ Abhakliste: `references/entbranden.md`.
 | Farben/Theme | Theme-Konfiguration (`tailwind.config.js`) + `globals.css` |
 | Logo/Bilder | Header-Komponente, Hero, Hero-Bilderliste, `public/` |
 | Stammdaten | Store-Route + Wissensspeicher-Key `arch.store_config` (**beide**) |
-| Liefergebiet | Lieferzonen-Modul (PLZ, Mindestwert, Gebühr, Fehlertext) |
+| Liefergebiet | Lieferzonen-Modul (PLZ, Mindestwert, Gebühr, Fehlertext, **Aktion/Rabatt**) |
 | Öffnungszeiten/Wunschzeit | Öffnungszeiten-Modul |
 | Rechtstexte | Impressum, Datenschutz, AGB |
 | Kassen-Artikelmap | `lib/…/articles.ts` **und** `tools/…-articles.json` |
