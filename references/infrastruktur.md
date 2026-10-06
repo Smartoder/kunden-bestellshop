@@ -94,13 +94,15 @@ Kunde (Browser)
 - [ ] Aus der Vorlage kopiert (**ohne** Git-History der Vorlage — frischer Start)
 - [ ] `.gitignore` **zuerst** prüfen: `.env*.local`, `.env`, `*.pem`, `*.key`,
       Zugangsdateien, Datenbankabzüge
-- [ ] **Commits nur unter dem Autor, den das Hosting akzeptiert.** Manche
-      Vercel-Hobby-Teams brechen den Deploy ab, wenn der Git-Autor kein Mitglied ist
-      („not a member"). Autor vor dem ersten Commit setzen.
+- [ ] **Commits nur unter dem Autor, den das Hosting akzeptiert.** Bei Vercel-Hobby
+      gilt: der **Inhaber** des Hosting-Kontos muss der Autor sein — ein fremder Autor
+      bricht den Deploy ab, entweder mit „not a member" oder (bei nicht zuordenbarer
+      E-Mail) mit `BLOCKED` / `COMMIT_AUTHOR_REQUIRED`. Autor vor dem ersten Commit
+      setzen. **Name frei, E-Mail = Kontoinhaber.**
 
 ```bash
-git config user.name  <erlaubter-autor>
-git config user.email <erlaubter-autor@users.noreply.github.com>
+git config user.name  <markenname>
+git config user.email <kontoinhaber@mail>       # nicht @users.noreply.github.com
 ```
 
 ---
@@ -177,9 +179,11 @@ select content from public.project_memory where key = 'arch.store_config';
 > gesetzt, zeigen `success_url`/`cancel_url` auf die falsche Domain und der Kunde
 > landet nach der Zahlung auf einer fremden Seite.
 
-> ⚠️ **Git-Autor = Team-Mitglied.** Bei Vercel-Hobby bricht der Deploy ab, wenn der
-> Git-Autor kein Mitglied ist („not a member"). Vor dem ersten Commit setzen
-> (`git config user.name/email`).
+> ⚠️ **Git-Autor = Kontoinhaber.** Bei Vercel-Hobby bricht der Deploy ab, wenn der
+> Autor dem Hosting-Konto nicht zugeordnet werden kann: „not a member" **oder**
+> `BLOCKED` mit `COMMIT_AUTHOR_REQUIRED` (nicht zuordenbare E-Mail). Vor dem ersten
+> Commit setzen — **Name frei, E-Mail = Kontoinhaber** (`git config user.name/email`).
+> Details: `references/regeln-und-fallen.md`, Falle 11.
 
 > ⚠️ **Vercel-Projekte liegen in einem Team-Scope.** Ein MCP-/CLI-Token, das nur auf
 > Nutzer-Ebene autorisiert ist, liefert für Team-Ressourcen **403 „re-authenticate to

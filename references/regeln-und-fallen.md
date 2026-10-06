@@ -105,9 +105,46 @@ selben Repo. Vor Konfig-Arbeit `git status` prüfen.
 
 ### Falle 11 — Vercel-Hobby lehnt „fremden" Git-Autor ab
 
-Der Deploy scheiterte mit „not a member", weil der Git-Autor kein Teammitglied war.
+Zwei Erscheinungsformen, **dieselbe Ursache** — der Autor ist dem Hosting-Konto nicht
+zuzuordnen. Der Deploy wird `BLOCKED`, **ohne Build (0 ms)**:
 
-**Regel:** Autor vor dem ersten Commit setzen (`git config user.name/email`).
+| `seatBlock.blockCode` | Wann | Maßnahme |
+|---|---|---|
+| `COMMIT_AUTHOR_REQUIRED` | Autor-E-Mail gehört zu **keinem** Konto (z. B. Fantasie-Adresse) | **E-Mail** des Autors korrigieren |
+| „not a member" | Autor zuordenbar, aber nicht im Team | Autor ins Team holen oder E-Mail ändern |
+
+Am **05.10.2026** belegt: fünf frühere Commits desselben Autors liefen durch, der
+sechste wurde blockiert — die Prüfung greift **nicht** rückwirkend, sondern ab dem
+Zeitpunkt ihres Eingreifens. Ein grüner Verlauf ist daher **kein** Beweis, dass der
+Autor stimmt.
+
+Vercel ordnet über die **E-Mail** zu (`githubCommitAuthorEmail`), **nicht** über den
+Anzeigenamen. Der Markenname darf frei bleiben.
+
+**Regel:** Autor **vor dem ersten Commit** setzen — Name beliebig, **E-Mail = Inhaber
+des Hosting-Kontos**:
+
+```bash
+git config user.name  <markenname>
+git config user.email <kontoinhaber@mail>
+```
+
+Schon gepusht? Dann neu autorisieren (Baum bleibt unverändert):
+
+```bash
+git commit --amend --no-edit --author "<markenname> <kontoinhaber@mail>"
+git push --force-with-lease origin main
+```
+
+**Diagnose zuerst — nicht den Code durchsuchen.** Bei `BLOCKED` steht der Grund in der
+API, nicht im Log:
+
+```bash
+vercel inspect --json <deploy-url>     # readyState, readyStateReason
+# GET /v13/deployments/<id>?teamId=<team>  ->  readyStateReason, seatBlock.blockCode
+```
+
+Ein blockierter Deploy ist **kein** Code- und **kein** Git-Fehler.
 
 ### Falle 12 — Env geändert, aber nicht neu deployt
 

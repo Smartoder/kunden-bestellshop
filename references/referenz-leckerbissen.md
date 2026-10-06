@@ -22,7 +22,7 @@ Diese Datei ist die **konkrete Wahrheit** hinter `references/architektur.md`
 | Produkt | Eigener Online-Bestellshop (Lieferando-artig): Speisekarte, Warenkorb, Lieferung/Abholung, Online-Zahlung, Bon in der Kasse |
 | Kasse | **WinOrder 2025** (Version 10.0.0.14) auf einem PC im Restaurant |
 | Bondrucker | **STAR mPOP** (Bluetooth) |
-| Repo | `HofZeitV12/leckerbissen-speisekarte` **(privat)** |
+| Repo | `Smartoder/leckerbissen-speisekarte` **(privat)** — vorher `HofZeitV12/…`, GitHub meldet beim Push „This repository moved", der alte Pfad leitet um |
 | Status | 🟢 **LIVE** — echte Zahlungen, End-to-End bis zum Bon bewiesen (Order #32 → Rechnung #6457) |
 
 **Bewiesen am 27.09.2026 mit echter Karte:** Website → Stripe LIVE → Datenbank
@@ -219,7 +219,8 @@ Marke und eigener Umgebung. Reihenfolge (Details in der jeweiligen Referenz):
 
 Ehrlich festgehalten, damit kein Agent „alles automatisch" verspricht:
 
-Nachgeprüft am **03.10.2026, abends** (die Lage ändert sich — vor jeder Aussage neu prüfen):
+Nachgeprüft am **05.10.2026** (die Lage ändert sich — vor jeder Aussage neu prüfen).
+Die Tabelle vom **03.10.2026** ist darunter als Vergleich erhalten:
 
 | Werkzeug | Stand am 03.10.2026 | Grenze / Ersatzweg |
 |---|---|---|
@@ -229,9 +230,45 @@ Nachgeprüft am **03.10.2026, abends** (die Lage ändert sich — vor jeder Auss
 | **Supabase MCP** | ❌ Zielprojekt **nicht freigegeben** (`no permission` bei Tabellen/Advisors, Projektliste leer) | Muster nur über die **HTTP-API** auslesbar; für neue Kunden die eigene Instanz als MCP verbinden |
 | **Hetzner MCP** | ❌ **nicht erreichbar** — Diagnose-Port `11436` von diesem Rechner **geschlossen** (443/22 offen); `mcp_auth` läuft in einen Timeout | Der Port hängt an einer **IP-Freigabeliste** der Hetzner-Firewall. Weg: **SSH-Tunnel** über Port 22 (bleibt ohne Firewall-Änderung nutzbar), sonst Firewall-Regel für die eigene IP |
 
+**Nachtrag 05.10.2026:**
+
+| Werkzeug | Stand | Bemerkung |
+|---|---|---|
+| **Vercel-MCP (Plugin, OAuth)** | ❌ `403` — „re-authenticate to this scope" bei **Team**-Ressourcen | Nutzer-Ebene erreichbar, Team-Scope nicht |
+| **Vercel-MCP (Token-Variante)** | ✅ `HTTP 200` auf `POST https://mcp.vercel.com` mit Bearer-Token | **Ersatzweg:** eigenen Eintrag in `~/.cursor/mcp.json` (`type: http`, `url`, `headers.Authorization = Bearer vcp_…`). Kein OAuth nötig |
+| **Hetzner-MCP** | ✅ erreichbar; Server `running` | zusätzlich per **SSH** geprüft (Port 22 offen, Port 11436 an IP-Freigabeliste) |
+| **Supabase-MCP** | ⚠️ Liste zeigt **fremde** Projekte mit | Nur die **eigene** Instanz anfassen — nie ein fremdes Projekt im selben Konto |
+
 > **Merksatz:** Ein MCP grün zu *nennen* ist kein Nachweis. Jede Aussage braucht den
 > **ausgeführten** Befehl — und wenn ein MCP fehlt, wird ersatzweise per **HTTP/SSH/
 > Dashboard** geprüft (siehe `SKILL.md` → Diagnose).
+
+### 8.2 Ein `BLOCKED`-Deploy ist kein Code-Fehler
+
+Am **05.10.2026** blieb ein Produktions-Deploy `BLOCKED` — **ohne Build (0 ms)**. Die
+Seite zeigte weiter den alten Stand. Der Grund stand **nicht** im Build-Log:
+
+```
+readyStateReason: "The deployment was blocked because Vercel couldn't find a
+                   Git account for the commit author."
+seatBlock.blockCode: COMMIT_AUTHOR_REQUIRED
+```
+
+Ursache: Der Commit-Autor trug eine E-Mail, die zu **keinem** GitHub-/Vercel-Konto
+gehört. Fünf vorherige Commits **desselben Autors** waren noch durchgelaufen — die
+Prüfung greift also **ab einem Zeitpunkt**, nicht rückwirkend. Ein grüner Verlauf ist
+**kein** Beweis.
+
+**Regel:** Bei `BLOCKED` **zuerst** den Grund aus der API lesen, **nicht** den Code
+durchsuchen:
+
+```bash
+vercel inspect --json <deploy-url>          # readyState, readyStateReason
+# GET /v13/deployments/<id>?teamId=<team>   # readyStateReason, seatBlock.blockCode
+```
+
+Details und der Fix (Commit neu autorisieren, Baum bleibt unverändert):
+`references/regeln-und-fallen.md`, Falle 11.
 
 ### 8.1 Die Vorlage ist **nicht eingefroren** — immer vom aktuellen Stand klonen
 

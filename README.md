@@ -141,7 +141,7 @@ viele Kunden möglich sind:
 | Baustein | Tarif im Muster | Grenze |
 |---|---|---|
 | **GitHub** | kostenlos | privater Speicherplatz — unkritisch |
-| **Vercel** | **Hobby** (kostenlos) | Git-Autor muss Team-Mitglied sein; Team-Scope beachten |
+| **Vercel** | **Hobby** (kostenlos) | Git-Autor muss der **Kontoinhaber** sein; Team-Scope beachten |
 | **Supabase** | **Free/Hobby** | eine Instanz pro Kunde → viele kleine Instanzen, nicht eine große geteilte |
 | **Hetzner** | Cloud-Server-**Abo** (einstelliger bis ~19 €/Monat) | **1 Server trägt mehrere Kunden** — dann getrennte Container/Ports/`.env`, nie geteilter Mail-Absender |
 | **Stripe** | pro Konto | Gebühren pro Transaktion; **eigenes Konto pro Kunde** empfohlen |

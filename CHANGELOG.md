@@ -9,6 +9,34 @@ ergänzen und mit `git push` veröffentlichen (siehe `README.md` → „Aktualis
 
 ---
 
+## 2026-10-05 — Git-Autor-Regel präzisiert (Deploy-Blockade `COMMIT_AUTHOR_REQUIRED`)
+
+**Anlass:** Ein Produktions-Deploy des Musters blieb `BLOCKED` — **ohne Build (0 ms)**.
+Der Skill nannte bisher nur die Erscheinungsform „not a member". Der tatsächliche Code
+war `COMMIT_AUTHOR_REQUIRED`: die **E-Mail** des Autors gehörte zu keinem Konto.
+Fünf vorherige Commits **desselben Autors** waren noch durchgelaufen — die Prüfung
+greift ab einem Zeitpunkt, nicht rückwirkend.
+
+**Kernaussage:** Der **Name** des Autors ist frei, die **E-Mail** nicht. Vercel ordnet
+über `githubCommitAuthorEmail` zu. Bei Hobby + privatem Repo muss der Autor der
+**Kontoinhaber** sein. „Commits nur als <markenname>" genügt **nicht**, wenn dessen
+E-Mail eine Fantasie-Adresse ist.
+
+| Datei | Änderung |
+|---|---|
+| `SKILL.md` | Kritikalität 5 neu gefasst: beide Codes in einer Tabelle, „Name frei, E-Mail nicht", Fix per `--amend --author` + `push --force-with-lease`, Diagnose über `vercel inspect --json` / `readyStateReason`. Diagnose-Tabelle: „Git-Autor = **Kontoinhaber**". |
+| `references/regeln-und-fallen.md` | Falle 11 neu gefasst: `COMMIT_AUTHOR_REQUIRED` ↔ „not a member", Nachweis vom 05.10.2026, Diagnose zuerst lesen. |
+| `references/infrastruktur.md` | Repo-Checkliste + Warnhinweis auf „Kontoinhaber" umgestellt. |
+| `references/referenz-leckerbissen.md` | Repo-Zeile: Umzug `HofZeitV12/…` → `Smartoder/…` („This repository moved"). Werkzeug-Stand um **05.10.2026** ergänzt: Vercel-MCP-Plugin `403`, **Token-Variante** `HTTP 200` (Ersatzweg ohne OAuth). Neuer Abschnitt **8.2**: `BLOCKED` ist kein Code-Fehler. |
+| `README.md` | Kosten-Tabelle: „Git-Autor muss **Kontoinhaber** sein". |
+
+**Für den Agenten:** Bei einem `BLOCKED`-Deploy **zuerst `readyStateReason` lesen**
+(`vercel inspect --json <url>`), **nicht** den Code durchsuchen. Ein grüner
+Deploy-Verlauf beweist **nichts** — die Autorenprüfung kann jederzeit greifen.
+Startseite danach live prüfen (`age: 0`), nicht nur HTTP 200.
+
+---
+
 ## 2026-10-03 (abends) — Konsistenz nach der Muster-Umstellung
 
 **Anlass:** Nach dem Umbenennen der Vorlage auf das konkrete Muster blieben drei

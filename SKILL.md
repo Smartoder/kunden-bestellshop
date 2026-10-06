@@ -172,14 +172,45 @@ Der Partner-Export (`/api/export/winorder`) läuft auf dem **Vercel-Projekt**, n
 dem Webhook-Server. Die Kasse ruft ihn mit **eigenem** Key auf. Ein Aufruf **ohne**
 Key muss **HTTP 401** liefern — das ist der Live-Test, dass die Auth greift.
 
-### 5. Git-Autor = Hosting-Teammitglied
+### 5. Git-Autor = Inhaber des Hosting-Kontos
 
-Vercel-Hobby-Teams brechen den Deploy ab, wenn der Git-Autor kein Teammitglied ist
-(„not a member"). Autor **vor dem ersten Commit** setzen:
+Vercel-Hobby bricht den Deploy ab, wenn der Git-Autor **keinem** Konto zugeordnet
+werden kann. Der Commit wird dann `BLOCKED` — **ohne Build (0 ms)**, aber mit
+`readyStateReason` und `seatBlock.blockCode`. Zwei Codes sind zu unterscheiden:
+
+| Code | Bedeutung | Maßnahme |
+|---|---|---|
+| `COMMIT_AUTHOR_REQUIRED` | Autor keinem Git-/Hosting-Konto zuordenbar | **E-Mail** des Autors korrigieren |
+| „not a member" | Autor zuordenbar, aber nicht (mehr) im Team | Autor ins Team holen oder E-Mail ändern |
+
+**Der Name ist frei, die E-Mail nicht.** Vercel ordnet über die **E-Mail** zu
+(`githubCommitAuthorEmail`), nicht über den Anzeigenamen. Eine Fantasie-Adresse wie
+`…@users.noreply.github.com` genügt **nicht**, wenn sie zu keinem Konto gehört.
+Autor **vor dem ersten Commit** setzen:
 
 ```bash
-git config user.name  <erlaubter-autor>
-git config user.email <erlaubter-autor@users.noreply.github.com>
+git config user.name  <markenname>            # egal, z. B. HofZeitV12
+git config user.email <kontoinhaber@mail>     # MUSS dem Hosting-Konto zugeordnet sein
+```
+
+Bei Hobby + privatem Repo gilt zusätzlich: **nur der Kontoinhaber** darf der Autor
+sein (Kollaboration gibt es dort nicht). Der Name, unter dem die Kasse und die Marke
+firmieren, hat darauf keinen Einfluss — er darf der Kundenname bleiben.
+
+**Falls der Deploy schon blockiert ist** (der Inhalt ist bereits gepusht):
+
+```bash
+git config user.email <kontoinhaber@mail>
+git commit --amend --no-edit --author "<markenname> <kontoinhaber@mail>"
+git push --force-with-lease origin main      # Baum bleibt unveraendert, nur der Autor
+```
+
+**Zuerst den Grund lesen, nicht den Code suchen.** Blockierte Deploys sind kein
+Code-Fehler:
+
+```bash
+vercel inspect --json <deploy-url>           # readyState, readyStateReason
+# oder direkt: GET /v13/deployments/<id>?teamId=<team>  ->  readyStateReason, seatBlock
 ```
 
 ---
@@ -239,7 +270,7 @@ des Anbieters.
 | Supabase | MCP-Zugriff auf die Zielinstanz (nicht jede ist freigegeben!) | sonst **HTTP-API** als Ersatzweg |
 | Vercel | Projekte des Teams auflisten | Kundenprojekt gelistet |
 | Vercel | Umgebungsvariablen prüfen (Namen, Modus) | vollständig, richtiger Modus |
-| Vercel | **Git-Autor** = Team-Mitglied (bei Hobby-Pflicht!) | Deploy **nicht** „not a member" |
+| Vercel | **Git-Autor** = Kontoinhaber (bei Hobby-Pflicht!) | Deploy **nicht** `BLOCKED` / „not a member" |
 | GitHub | Repo + Hauptzweig lesen, `.env.example` | nur Platzhalter |
 | GitHub | **Vorlage auf `origin/main` aktualisieren** (`git rev-list --count HEAD..origin/main` = 0) | kein Fork von altem Stand |
 | Hetzner | Server auflisten, Zielserver lesen | **running**, Firewall aktiv |
