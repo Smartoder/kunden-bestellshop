@@ -9,6 +9,51 @@ ergänzen und mit `git push` veröffentlichen (siehe `README.md` → „Aktualis
 
 ---
 
+## 2026-10-07 — Versionsstand in der Beschreibung (Popup zeigt die Fassung)
+
+**Anlass:** Der Skill lag **dreimal** auf dem Rechner — und zwei Kopien waren vom
+02.10., also vier Tage alt. Die Beschreibung war in **allen** Fassungen wortgleich
+(`SKILL.md`, Zeilen 1–4, Zeichen für Zeichen geprüft). Wer im Chat `/kunden-bestellshop`
+markierte, sah im Popup **Name + Beschreibung** — und konnte damit **nicht** erkennen,
+welche Fassung geladen war. Genau daran ist die Fehlersuche gescheitert.
+
+**Änderung:** Die Beschreibung beginnt jetzt mit einem Versionsstand:
+
+```
+description: "[Stand 2026-10-07] Eine Online-Bestell-Website fuer Kassensysteme in
+Deutschland …"
+```
+
+Damit zeigt das Popup die Fassung direkt an. Beim nächsten inhaltlichen Stand das
+Datum **im selben Vorgang** mitziehen.
+
+> ⚠️ **Der Wert ist doppelt gequotet — die inneren Anführungszeichen müssen maskiert
+> sein.** Die Beschreibung enthält `\"wie setze ich das gleiche System fuer einen neuen
+> Restaurant-Kunden auf\"`. Ohne die Backslashes bricht YAML an der Stelle ab, und der
+> Skill lädt nicht mehr. Nach jeder Änderung prüfen:
+> `node tools/pruefe-verweise.mjs` **und** die Beschreibung als JSON parsen.
+
+| Datei | Änderung |
+|---|---|
+| `SKILL.md` | `description` mit Versionsstand `[Stand 2026-10-07]`, doppelt gequotet, innere Anführungszeichen maskiert |
+
+**Lehre (gehört in jede Fehlersuche):** Ein Popup mit Name + Beschreibung ist **kein**
+Nachweis für die geladene Fassung, solange die Beschreibung sich nicht ändert. Sichere
+Erkennung sind **Dateigröße und Inhalt**:
+
+| Merkmal | Fassung 02.10. | Fassung ab 03.10. |
+|---|---|---|
+| `SKILL.md` | 13.047 Bytes | ab 17.221 Bytes |
+| „Dieser Skill liegt auf GitHub" | fehlt | vorhanden |
+| `CHANGELOG.md`, `references/referenz-leckerbissen.md` | fehlen | vorhanden |
+
+**Offen:** Der GitHub-Account wurde von `HofZeitV12` auf `Smartoder` umbenannt. Die
+Weiterleitung liefert noch (geprüft: HTTP 200, 16.898 Bytes über die alte Raw-URL),
+die Links im Skill und in `COPY-PASTE.md` nennen aber weiter `HofZeitV12`. Falls der
+Name freigegeben wird, brechen **alle** Lade-Anleitungen. Umstellung bewusst zurückgestellt.
+
+---
+
 ## 2026-10-06 — Bon-Fehler behoben und am Bon bewiesen (Umlaute, Adresse, Zahlungsart)
 
 **Anlass:** Drei Fehler auf einem echten Bon (Bestellung #43): Umlaute verstümmelt
