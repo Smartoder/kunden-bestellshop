@@ -126,6 +126,20 @@ Das ist der „gleiche Aufbau". Ein Fork startet mit **genau dieser Oberfläche*
 **Funktionen**
 
 - Menü aus der Datenbank, **Preise serverseitig neu gerechnet** (nie aus dem Browser)
+- **Extra-Zutaten nur für Pizza & Calzone** (Stand 11.10.2026): je Zutat ein
+  **−/+**-Zähler, gruppiert, **plus** ein freies **Bemerkungsfeld** („z. B. ohne
+  Mais"). Snacks, Dips, Getränke und Dessert haben **keine** Extras. Extras sind
+  **additiv** (`einzelpreis = Basis + Σ(Extra.Preis × Menge)`) und **Teil der
+  Warenkorb-Zeile** — zwei Varianten desselben Gerichts sind getrennte Zeilen. Der
+  `+`/`−`-Knopf auf der Speisekarte bedient die **einfache** Variante (ohne Extras).
+  Die Preis-Hoheit bleibt serverseitig: unbekannte Extra-IDs → **400**, Extras nur
+  bei Pizza/Calzone. Katalog + Preise **exakt wie die Kasse** (`lib/extras.ts`),
+  UI `components/ExtraZutatenModal.tsx`.
+- **Kategorien** (Stand 11.10.2026): „Beilagen" → **„Snacks"** (dort Pizzabrötchen);
+  **neu „Dessert"** (Tiramisu). Gesamtzahl bleibt **51 Artikel** (Migration
+  `20261011170000_kategorien_snacks_dessert.sql`)
+- **Zutaten ungekürzt:** die Zutaten-Beschreibung wird **nicht** mehr per
+  `line-clamp` gekürzt — die Zutaten stehen in der DB vollständig
 - Lieferzonen als **Allow-List** (PLZ, Mindestbestellwert, Gebühr), Fehlertext im Modul
 - **Aktion/Rabatt** (z. B. „Lieferung gratis"): reguläre Gebühr als Streichpreis, eine
   Schaltstelle rechnet den tatsächlichen Betrag (siehe Nachtrag in Abschnitt 2)
@@ -185,10 +199,24 @@ Der Weg, der **funktioniert** — und der Weg, der **nicht** funktioniert:
 |---|---|
 | `OrderID`-Präfix | `LB-<id>` (z. B. `LB-32`) |
 | `PaymentType` | `Online bezahlt` (muss als **Zahlungsart** in der Kasse existieren) |
-| Artikel-Präfix | Pizza trägt `Pizza `, Dips/Beilagen/Getränke **ohne** Präfix |
+| Artikel-Präfix | Pizza trägt `Pizza `, Dips/Snacks/Getränke **ohne** Präfix |
 | Artikel-Zuordnung | **zwei** Dateien, identischer Inhalt: `lib/winorder/articles.ts` + `tools/winorder-articles.json` |
+| Extras (Toppings) | **`SubArticleList.SubArticle`** je Extra (Stand 11.10.2026) — *nicht* als eigene Artikel |
+| Bemerkung je Gericht | **per-Artikel-`Comment`** („ohne Mais") — *nicht* der Kopf-Kommentar der Bestellung |
 
-Details: `references/winorder-kasse.md`.
+**Extra-Namen: eigene Liste, NICHT die Gericht-Map.** Ein Extra trägt in der Kasse
+denselben Namen wie der Artikel („Salami"). Würde es über die **Gericht-map**
+(`nameMap`) laufen, würde aus dem Extra „Salami" das **Gericht** `Pizza Salami` — die
+Zuordnung zeigt dann auf die ganze Pizza. Deshalb:
+
+- **eigene** Extra-Namensliste: `extraNames` in `tools/winorder-articles.json`
+  (gespiegelt in `lib/extras.ts` / `ALL_EXTRAS`)
+- **eigene** Resolver: `Resolve-WinOrderExtraName` (PowerShell-Bridge) /
+  `toExtraArticleName` (TypeScript) — der Extra-Name bleibt **unverändert**, nur
+  unbekannte Namen laufen über die normale Artikeltabelle
+- die **beiden Wege müssen spiegelgleich** sein
+
+Details: `references/winorder-kasse.md`, Abschnitt „Extras und Bemerkung".
 
 ---
 

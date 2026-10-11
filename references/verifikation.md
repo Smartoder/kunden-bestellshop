@@ -40,6 +40,10 @@ sonst alle stoppen, Bauverzeichnis löschen, neu bauen.
 | Stammdaten | Stammdaten-Endpunkt | **Kunden**daten, keine Altwerte |
 | Kasse | Export **ohne** Key | HTTP 401 |
 | Kasse | Abhol-Endpunkt (REST) | liefert nur `offen`/`ausstehend` |
+| Kasse | **Extras** erscheinen als `SubArticleList.SubArticle` (nicht als eigene Artikel) | je Extra ein `SubArticle` |
+| Kasse | **Bemerkung** als per-Artikel-`Comment` (nicht Kopf-`Comment`) | „ohne Mais" am Gericht |
+| Kasse | **Extra-Namenskollision:** „Salami" bleibt „Salami" | **nicht** „Pizza Salami" |
+| Kasse | Extra nur bei Pizza/Calzone; unbekannte Extra-ID | **400** |
 | Kasse | Export **mit** Key, Standard | leer im Testbetrieb (gewollt) |
 | Zahlung | Checkout mit leerem Warenkorb | HTTP 400 |
 | Zahlung | Modus-Wache passt zu den Keys | kein 503/409 |

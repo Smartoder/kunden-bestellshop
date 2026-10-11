@@ -122,6 +122,16 @@ Nutze die Skills `legal-de` und `legal-eu`. **Keine** Texte eines anderen Kunden
 
 - [ ] Artikel-Map im **TypeScript** (`lib/…/articles.ts`)
 - [ ] Artikel-Map im **PowerShell/JSON** (`tools/…-articles.json`)
+- [ ] **Extra-Katalog** an die Kasse des Kunden anpassen (`lib/extras.ts` →
+      `EXTRA_GROUPS`/`ALL_EXTRAS`): Namen **und** Preise sind **exakt die Kassenwerte**
+- [ ] **Extra-Namen** in `tools/…-articles.json` → `extraNames` (Spiegel der
+      `ALL_EXTRAS`) mitziehen — **eigene** Liste, **nicht** die Gericht-map. Die
+      Resolver `toExtraArticleName` (TS) und `Resolve-WinOrderExtraName` (PS) müssen
+      **spiegelgleich** bleiben (Details: `references/winorder-kasse.md`, „Extras und
+      Bemerkung")
+- [ ] **Kategorien** prüfen (Muster: „Snacks" statt „Beilagen", neu „Dessert") — die
+      Extras hängen an **Kategorie-Namen** (`hasExtras` = Pizza/Calzone); heißen die
+      Kategorien beim Kunden anders, greift die Extra-Freigabe nicht
 
 - [ ] Format-Modul: `StoreName`, `Referer` (Domain), `Agent`, **OrderID-Präfix**
       (Vorlage: `LB-<id>` — auf den Kunden anpassen) und `PaymentType`
@@ -200,7 +210,8 @@ Treffer in **Code, Konfiguration oder `public/`** sind ein Fehler.
 - [ ] Lieferzonen inkl. Fehlertext
 - [ ] Öffnungszeiten
 - [ ] Impressum / Datenschutz / AGB
-- [ ] Artikelmap (TS **und** JSON) + Formattexte
+- [ ] Artikelmap (TS **und** JSON) + Extra-Katalog/Extra-Namen + Formattexte
+- [ ] Kategorien (Snacks/Dessert) mit den Extras abgestimmt
 - [ ] `RESTAURANT` + hartcodierte Namen + `SITE_URL`
 - [ ] Mail-Vorlagen + Absender + verifizierte Domain
 - [ ] Manifest / Service Worker / Icons

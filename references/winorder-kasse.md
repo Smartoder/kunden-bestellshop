@@ -81,6 +81,62 @@ einen Kommentar daraus — **keine Umsätze, doppelte Stämme.**
 
 ---
 
+## 1a. Extras (Toppings) und Bemerkung je Gericht
+
+Stand **11.10.2026** am Muster. Gilt für jeden Fork, der Extra-Zutaten anbietet.
+
+| Was der Gast wählt | Wie es in den Bon kommt | Was es **nicht** ist |
+|---|---|---|
+| **Extra-Zutat** (Zähler −/+, z. B. 2× Oliven) | **`SubArticleList.SubArticle`** je Extra (`ArticleName`, `Count`, `Price`) | **kein** eigener Artikel in der `ArticleList` |
+| **Freitext-Bemerkung** je Gericht („ohne Mais") | **per-Artikel-`Comment`** am Gericht | **nicht** der **Kopf-`Comment`** der ganzen Bestellung |
+
+```xml
+<Article>
+  <ArticleName>Pizza Margherita</ArticleName>
+  <Count>1</Count>
+  <Price>9.50</Price>
+  <SubArticleList>
+    <SubArticle><ArticleName>Oliven</ArticleName><Count>2</Count><Price>2.00</Price></SubArticle>
+    <SubArticle><ArticleName>Salami</ArticleName><Count>1</Count><Price>3.00</Price></SubArticle>
+  </SubArticleList>
+  <!-- per-Artikel-Bemerkung des Gastes -->
+  <Comment>ohne Mais</Comment>
+</Article>
+```
+
+- [ ] Extras **nur** bei den dafür freigegebenen Kategorien (Muster: **Pizza**,
+      **Calzone**) — serverseitig gegen den Katalog prüfen; unbekannte Extra-ID → **400**
+- [ ] Extra-Preis **pro Einheit** × Menge; `einzelpreis = Basis + Σ(Extra.Preis × Menge)`
+- [ ] Bemerkung als per-Artikel-`Comment`, den **Kopf-`Comment`** der Bestellung frei lassen
+
+### 🔴 Die Extra-Namen dürfen NICHT über die Gericht-Map laufen
+
+Ein Extra trägt in der Kasse **denselben Namen** wie der Artikel („Salami", „Käse").
+Die **Gericht-map** (`nameMap`) bildet aber `salami` → **`Pizza Salami`** ab. Läuft der
+Extra-Name durch diese Map, zeigt der `SubArticle` auf die **ganze Pizza** statt auf die
+Zutat — stiller Fehler, der auf dem Bon falsch aussieht.
+
+**Deshalb eine eigene Extra-Namensliste und ein eigener Resolver — beide spiegeln:**
+
+| Weg | Ort |
+|---|---|
+| App/Format (TypeScript) | `extraNames` gespiegelt aus `lib/extras.ts` (`ALL_EXTRAS`) → `toExtraArticleName()` in `lib/…/format.ts` |
+| Bridge (PowerShell/JSON) | `extraNames` in `tools/…-articles.json` → `Resolve-WinOrderExtraName` in `tools/winorder-articles.ps1` |
+
+Regel des Resolvers: **ist der Name ein bekannter Extra-Name, bleibt er unverändert**
+(nur getrimmt); nur ein **unbekannter** Name läuft über die normale Artikeltabelle.
+
+> ⚠️ **Spiegelgleichheit ist Pflicht.** Weichen TS- und PS-Liste voneinander ab,
+> übersetzt der REST-Weg anders als die Bridge — derselbe Gast bekommt je nach
+> Betriebsweg einen anderen Bon. Beim Kunden **immer beide** Listen pflegen.
+>
+> ⚠️ **Umlaute nur als UTF-8.** Die Extra-Namen stehen als **Liste** (nicht als
+> Umlaut-Literale) in `tools/…-articles.json` und werden dort **explizit als UTF-8**
+> gelesen — sonst wird aus „Käse" unter PowerShell 5.1 „KÃ¤se" und kein Umlaut-Extra
+> passt mehr (dieselbe Falle wie bei der Artikelmap, siehe Abschnitt 1).
+
+---
+
 ## 2. Der Hotfolder
 
 ```

@@ -9,6 +9,65 @@ ergänzen und mit `git push` veröffentlichen (siehe `README.md` → „Aktualis
 
 ---
 
+## 2026-10-11 — Extra-Zutaten + Bemerkung, Kategorien Snacks/Dessert, zwei Kassen-Fallen
+
+**Anlass:** Am Muster **Leckerbissen** kamen **Extra-Zutaten** und ein freies
+**Bemerkungsfeld** in den Bestell-Flow, die Kategorien wurden umbenannt/ergänzt, und
+die Zutaten-Beschreibung wird ungekürzt angezeigt. Deploy **READY** auf
+`leckerbissen.online`; `/api/menu` liefert **51 Artikel** (Gesamtzahl unverändert).
+Diese Funktionen gehören in jeden neuen Fork — mit den folgenden Fallen.
+
+**Änderung im Muster:**
+
+- **Extra-Zutaten nur für Pizza & Calzone.** Je Zutat ein **−/+**-Zähler (gruppiert)
+  **plus** ein freies Bemerkungsfeld („z. B. ohne Mais"). Snacks, Dips, Getränke,
+  Dessert haben **keine** Extras. Katalog und Preise sind **exakt die Kassenwerte**
+  (3,00 € / 2,00 € / 0,00 €).
+- **Extras sind additiv und Teil der Warenkorb-Zeile**, nicht ein eigener Artikel:
+  zwei Varianten desselben Gerichts (unterschiedliche Extras/Notiz) sind **getrennte
+  Zeilen**. Der `+`/`−`-Knopf auf der Speisekarte bedient immer die **einfache**
+  Variante (ohne Extras). Preis-Hoheit bleibt **serverseitig**: unbekannte Extra-IDs
+  → **400**, Extras **nur** bei Pizza/Calzone; `einzelpreis = Basis + Σ(Extra.Preis ×
+  Menge)`.
+- **Im Bon:** Extras als **`SubArticleList.SubArticle`**, die Bemerkung als
+  **per-Artikel-`Comment`** — **nicht** als eigene Bon-Artikel.
+- **Kategorien:** „Beilagen" → **„Snacks"** (dort Pizzabrötchen); **neu „Dessert"**
+  (Tiramisu). Gesamtzahl bleibt 51. Migration
+  `20261011170000_kategorien_snacks_dessert.sql`.
+- **Zutaten vollständig:** die Kürzung (`line-clamp`) der Zutaten-Beschreibung wurde
+  entfernt; die Zutaten stehen in der DB vollständig und werden ungekürzt angezeigt.
+
+**Zwei neue Fallen (gehören in jeden Fork):**
+
+1. **Extra-Name darf NICHT über die Gericht-Map laufen.** Ein Extra trägt in der
+   Kasse denselben Namen wie der Artikel („Salami"). Läuft es über die Gericht-Map
+   (`nameMap`), wird aus dem Extra **„Pizza Salami"** — die Zuordnung zeigt dann auf
+   die ganze Pizza. Deshalb eine **eigene** Extra-Namensliste (`extraNames` in
+   `tools/winorder-articles.json`, gespiegelt in TS) und eigene Resolver
+   (`Resolve-WinOrderExtraName` in PowerShell / `toExtraArticleName` in TypeScript).
+   Die **beiden Wege müssen spiegelgleich** sein.
+2. **Globale OS-Umgebungsvariablen überschreiben `.env.local`.** Der Supabase-Admin-
+   Client liest `process.env.SUPABASE_URL` zuerst. Auf einem Rechner mit **fremdem**
+   globalem `SUPABASE_URL` liest `npm run dev` still die **fremde** DB (falsche
+   Kategorien/Gerichte) — die **Live-Seite** bleibt dabei korrekt. Abhilfe: betroffene
+   Variablen vor `npm run dev` entfernen oder nicht global setzen.
+
+| Datei | Änderung |
+|---|---|
+| `CHANGELOG.md` | dieser Eintrag |
+| `SKILL.md` | Versionsstand `[Stand 2026-10-07]` → `[Stand 2026-10-11]`; Berührungspunkt „Extra-Katalog + Extra-Namen" in der Rebranding-Kurzfassung |
+| `references/referenz-leckerbissen.md` | §3 Funktionsumfang um Extra-Zutaten + Bemerkung + Kategorien; §5 Kassen-Anbindung um `SubArticle` + per-Artikel-`Comment` + Extra-Namens-Regel |
+| `references/winorder-kasse.md` | neuer Abschnitt: Extras als `SubArticleList.SubArticle`, Bemerkung als per-Artikel-`Comment`, **eigene** Extra-Namensliste, Spiegelgleichheit TS↔PS |
+| `references/entbranden.md` | Extra-Katalog (`lib/extras.ts`) und Extra-Namen (`tools/…-articles.json` → `extraNames`) als kundenspezifisch; Kategorien (Snacks/Dessert) mitprüfen |
+| `references/regeln-und-fallen.md` | **Falle 16** (Extra-Name über die Gericht-Map → „Pizza Salami"), **Falle 17** (globale OS-Env überschreibt `.env.local`) |
+| `references/verifikation.md` | Prüfpunkt: Extras-Fixture (SubArticle + per-Artikel-Comment) muss sauber sein |
+
+**Für jeden Agenten:** Bei einem Fork **immer** prüfen, ob Extra-Katalog und
+Extra-Namen **kundenspezifisch** angepasst sind — sie sind **kein** Copy-Paste-Feld.
+Und vor `npm run dev` die Umgebung sauber halten (Falle 17).
+
+---
+
 ## 2026-10-07 — Versionsstand in der Beschreibung (Popup zeigt die Fassung)
 
 **Anlass:** Der Skill lag **dreimal** auf dem Rechner — und zwei Kopien waren vom

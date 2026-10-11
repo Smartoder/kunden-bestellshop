@@ -270,6 +270,34 @@ HEAD..origin/main` muss **0** sein) oder direkt von `origin/main` klonen. Skript
 und Migrationen **am aktuellen Stand** ablesen, nie aus dem Gedächtnis. Details:
 `references/referenz-leckerbissen.md`, Abschnitt 8.1.
 
+### Falle 16 — Extra-Name läuft über die Gericht-map → „Salami" wird „Pizza Salami"
+
+Seit dem **11.10.2026** kennt das Muster **Extra-Zutaten** (Pizza/Calzone). Ein Extra
+trägt in der Kasse **denselben Namen** wie der Artikel („Salami", „Käse"). Läuft der
+Extra-Name über die normale **Gericht-map** (`nameMap`), bildet der Schlüssel `salami`
+auf das **Gericht** `Pizza Salami` ab — der `SubArticle` zeigt dann auf die ganze
+Pizza statt auf die Zutat.
+
+**Regel:** Extras bekommen eine **eigene** Namensliste (`extraNames`) und einen
+**eigenen** Resolver (`Resolve-WinOrderExtraName` / `toExtraArticleName`). Ein bekannter
+Extra-Name bleibt **unverändert**; nur die Gericht-Map der normalen Artikel darf das
+`Pizza `-Präfix vergeben. **Beide Wege (TS ↔ PS) müssen spiegelgleich sein.**
+Siehe `references/winorder-kasse.md`, Abschnitt „Extras und Bemerkung".
+
+### Falle 17 — Globale OS-Umgebungsvariablen überschreiben `.env.local`
+
+Der Supabase-Admin-Client liest `process.env.SUPABASE_URL` **zuerst** — eine **global**
+gesetzte OS-Variable hat damit Vorrang vor `.env.local`. Auf einem Rechner mit fremdem
+globalem `SUPABASE_URL` liest `npm run dev` **still die falsche Datenbank** (falsche
+Kategorien, fremde Gerichte) — und die **Live-Seite ist dabei korrekt**, was die
+Fehlersuche in die Irre führt.
+
+**Regel:** Betroffene Variablen (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, …) **nicht global**
+setzen; vor `npm run dev` die globalen Werte entfernen (oder nur in `.env.local` pflegen).
+Bei „im Dev fehlen Kategorien / die Artikel stimmen nicht" zuerst prüfen, welche
+Datenbank der Dev-Server tatsächlich liest — nicht die Live-Seite verdächtigen.
+Real erlebt am **11.10.2026** am Muster.
+
 ---
 
 ## Verbote
