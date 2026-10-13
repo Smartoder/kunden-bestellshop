@@ -225,7 +225,7 @@ abweichen — über die **Suche** nach dem alten Kundennamen prüfen, nicht blin
 | Erfolgsseite | `app/success/page.tsx` |
 | Modus-Wache | `lib/stripe-mode.ts` |
 | Lieferzonen | `lib/delivery-zones.ts` |
-| Öffnungszeiten | `lib/opening-hours.ts` |
+| Öffnungszeiten / Wunschzeit | `lib/opening-hours.ts` (`prepMinutes`, `computeSlots`) — Mo–Fr vs. Sa–So siehe `references/referenz-leckerbissen.md` §3 |
 | Kassen-Format | `lib/winorder/format.ts` |
 | Kassen-Artikelmap (TS) | `lib/winorder/articles.ts` |
 | Kassen-Artikelmap (JSON) | `tools/…-articles.json` |

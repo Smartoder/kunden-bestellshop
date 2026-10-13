@@ -143,7 +143,19 @@ Das ist der „gleiche Aufbau". Ein Fork startet mit **genau dieser Oberfläche*
 - Lieferzonen als **Allow-List** (PLZ, Mindestbestellwert, Gebühr), Fehlertext im Modul
 - **Aktion/Rabatt** (z. B. „Lieferung gratis"): reguläre Gebühr als Streichpreis, eine
   Schaltstelle rechnet den tatsächlichen Betrag (siehe Nachtrag in Abschnitt 2)
-- Öffnungszeiten + **Wunschzeit** aus Freitext (15-Min-Raster, Vorlauf)
+- Öffnungszeiten + **Wunschzeit** (Lieferando-Muster): ASAP + 5-Min-Slots am
+  Uhrraster; Annahme bis 22:00, letzter Zeitpunkt 22:30. Zubereitung je Weg und
+  Wochentag (Europe/Berlin) — Öffnungszeiten jeden Tag gleich, der Kunde sieht
+  nur Uhrzeiten:
+
+  | Tag | Weg | Prep | ASAP bei 17:00 | Erster Slot |
+  |---|---|---|---|---|
+  | Mi/Fr (Mo–Fr) | Abholung | 12 | ca. **17:12** | 17:15 |
+  | Mi/Fr | Lieferung | 45 | ca. **17:45** | 17:45 |
+  | Sa/So | Abholung | 17 | ca. **17:17** | 17:20 |
+  | Sa/So | Lieferung | 60 | ca. **18:00** | 18:00 |
+
+  Quelle im Muster: `lib/opening-hours.ts` (`prepMinutes` / `computeSlots`)
 - Warenkorb mit Kundendaten, Liefer- oder Abholmodus
 - Stripe **Redirect-Checkout** (`mode: payment`), `metadata` = `order_id` + `order_type`
 - **Zwei Webhooks**, **Modus-Wache**, Mail-Marker `bestaetigung_mail_am`

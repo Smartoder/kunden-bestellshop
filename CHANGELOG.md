@@ -9,6 +9,34 @@ ergänzen und mit `git push` veröffentlichen (siehe `README.md` → „Aktualis
 
 ---
 
+## 2026-10-13 — Wunschzeit Mo–Fr / Sa–So: Belegtabelle (ASAP + erster Slot)
+
+**Anlass:** Im Muster Leckerbissen ist die Zubereitung je Weg und Wochentag fest
+(Europe/Berlin). Die Öffnungszeiten sind jeden Tag gleich (17:00–22:00); der Kunde
+sieht **keine** Minuten-Angabe, sondern andere Uhrzeiten. Die veraltete Zeile
+„15-Min-Raster, Vorlauf" in der Referenz war falsch.
+
+**Belegtabelle (bei Ladenöffnung 17:00):**
+
+| Tag | Weg | Prep | ASAP bei 17:00 | Erster Slot |
+|---|---|---|---|---|
+| Mi/Fr (Mo–Fr) | Abholung | 12 | ca. **17:12** | 17:15 |
+| Mi/Fr | Lieferung | 45 | ca. **17:45** | 17:45 |
+| Sa/So | Abholung | 17 | ca. **17:17** | 17:20 |
+| Sa/So | Lieferung | 60 | ca. **18:00** | 18:00 |
+
+| Datei | Änderung |
+|---|---|
+| `CHANGELOG.md` | dieser Eintrag |
+| `SKILL.md` | Versionsstand `[Stand 2026-10-13]` |
+| `references/referenz-leckerbissen.md` | §3 Wunschzeit: ASAP + 5-Min-Raster + Tabelle (ersetzt „15-Min-Raster") |
+| `references/architektur.md` | Modulzeile Öffnungszeiten verweist auf die Tabelle |
+
+**Für jeden Agenten:** Beim Fork die Prep-Werte kundenspezifisch setzen — die
+Tabelle ist das **Muster**, nicht der Kundensatz.
+
+---
+
 ## 2026-10-11 — Extra-Zutaten + Bemerkung, Kategorien Snacks/Dessert, zwei Kassen-Fallen
 
 **Anlass:** Am Muster **Leckerbissen** kamen **Extra-Zutaten** und ein freies
